@@ -1,0 +1,17 @@
+# Syntax Coloring Map For MXChipFirebase
+
+# Datatypes (KEYWORD1)
+MXChipFirebase	KEYWORD1
+
+# Methods and Functions (KEYWORD2)
+begin	KEYWORD2
+setPath	KEYWORD2
+setDebugMode	KEYWORD2
+send	KEYWORD2
+sendJSON	KEYWORD2
+isConnected	KEYWORD2
+getLastError	KEYWORD2
+floatToString	KEYWORD2
+buildJSON	KEYWORD2
+
+# Constants (LITERAL1) 

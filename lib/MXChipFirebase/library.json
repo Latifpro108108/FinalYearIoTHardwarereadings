@@ -1,0 +1,23 @@
+{
+    "name": "MXChipFirebase",
+    "version": "1.0.0",
+    "description": "A library for connecting MXChip devices to Firebase Realtime Database",
+    "keywords": "mxchip, firebase, realtime database",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/Latifpro108108/MXChip-Firebase-Bridge.git"
+    },
+    "authors": [
+        {
+            "name": "Abdoul Latif Dabone",
+            "email": "latifpro108108@gmail.com",
+            "maintainer": true
+        }
+    ],
+    "license": "MIT",
+    "dependencies": {
+        "AZ3166": "^1.0.0"
+    },
+    "frameworks": "arduino",
+    "platforms": "ststm32"
+} 
