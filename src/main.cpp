@@ -88,6 +88,122 @@
 #define MIC_PIN A3
 
 // ============================================================================
+// ENHANCED MENTAL HEALTH ANALYSIS THRESHOLDS
+// ============================================================================
+
+// Enhanced Sound Analysis - Human-like perception
+#define SOUND_SILENCE_MAX 30           // 0-30: Complete silence
+#define SOUND_WHISPER_MAX 60           // 31-60: Whisper level
+#define SOUND_NORMAL_MAX 120           // 61-120: Normal conversation
+#define SOUND_LOUD_MAX 200             // 121-200: Loud talking/shouting
+#define SOUND_VERY_LOUD_MAX 300        // 201-300: Very loud (disturbing)
+#define SOUND_DANGEROUS_MIN 300        // 300+: Dangerous levels
+
+// Enhanced Motion Analysis - Behavioral interpretation
+#define MOTION_SLEEPING_MAX 0.5        // 0-0.5: Sleeping/very still
+#define MOTION_SITTING_MAX 1.5         // 0.5-1.5: Sitting/relaxed
+#define MOTION_WALKING_MAX 3.0         // 1.5-3.0: Normal walking
+#define MOTION_ACTIVE_MAX 6.0          // 3.0-6.0: Active movement
+#define MOTION_AGITATED_MAX 10.0       // 6.0-10.0: Agitated/restless
+#define MOTION_VIOLENT_MIN 10.0        // 10+: Violent/panic behavior
+
+// ============================================================================
+// ENHANCED MENTAL HEALTH ANALYSIS FUNCTIONS
+// ============================================================================
+
+// Enhanced Sound Analysis - Human-like perception
+String analyzeSoundPerception(float soundLevel) {
+    if (soundLevel <= SOUND_SILENCE_MAX) {
+        return "SILENCE";
+    } else if (soundLevel <= SOUND_WHISPER_MAX) {
+        return "WHISPER";
+    } else if (soundLevel <= SOUND_NORMAL_MAX) {
+        return "NORMAL";
+    } else if (soundLevel <= SOUND_LOUD_MAX) {
+        return "LOUD";
+    } else if (soundLevel <= SOUND_VERY_LOUD_MAX) {
+        return "VERY_LOUD";
+    } else {
+        return "DANGEROUS";
+    }
+}
+
+// Enhanced Motion Analysis - Behavioral interpretation
+String analyzeMotionBehavior(float motionMagnitude) {
+    if (motionMagnitude <= MOTION_SLEEPING_MAX) {
+        return "SLEEPING";
+    } else if (motionMagnitude <= MOTION_SITTING_MAX) {
+        return "SITTING";
+    } else if (motionMagnitude <= MOTION_WALKING_MAX) {
+        return "WALKING";
+    } else if (motionMagnitude <= MOTION_ACTIVE_MAX) {
+        return "ACTIVE";
+    } else if (motionMagnitude <= MOTION_AGITATED_MAX) {
+        return "AGITATED";
+    } else {
+        return "VIOLENT";
+    }
+}
+
+// Mental Health Assessment
+String assessMentalHealth(float temp, float humidity, float motion, float sound, String soundPerception, String motionBehavior) {
+    int stressScore = 0;
+    
+    // Sound-based stress indicators
+    if (soundPerception == "VERY_LOUD" || soundPerception == "DANGEROUS") {
+        stressScore += 2;
+    } else if (soundPerception == "LOUD") {
+        stressScore += 1;
+    }
+    
+    // Motion-based stress indicators
+    if (motionBehavior == "VIOLENT") {
+        stressScore += 3;
+    } else if (motionBehavior == "AGITATED") {
+        stressScore += 2;
+    } else if (motionBehavior == "ACTIVE" && motion > 5.0) {
+        stressScore += 1; // High activity
+    }
+    
+    // Environmental stress indicators
+    if (temp > 30.0 || humidity > 85.0) {
+        stressScore += 2;
+    } else if (temp > 26.0 || humidity > 70.0) {
+        stressScore += 1;
+    }
+    
+    // Determine mental health status
+    if (stressScore == 0) {
+        return "CALM";
+    } else if (stressScore <= 2) {
+        return "ANXIOUS";
+    } else if (stressScore <= 4) {
+        return "STRESSED";
+    } else if (stressScore <= 6) {
+        return "DISTRESSED";
+    } else {
+        return "CRITICAL";
+    }
+}
+
+// Generate Caregiver Recommendations
+String generateRecommendations(String mentalStatus) {
+    if (mentalStatus == "CALM") {
+        return "Patient is comfortable. Continue monitoring.";
+    } else if (mentalStatus == "ANXIOUS") {
+        return "Mild anxiety detected. Check environment and provide comfort.";
+    } else if (mentalStatus == "STRESSED") {
+        return "Moderate stress detected. Consider intervention or comfort measures.";
+    } else if (mentalStatus == "DISTRESSED") {
+        return "High distress detected. Immediate attention recommended.";
+    } else if (mentalStatus == "CRITICAL") {
+        return "CRITICAL SITUATION. Immediate intervention required.";
+    } else {
+        return "Continue monitoring.";
+    }
+}
+
+// ============================================================================
 // DIRECT I2C COMMUNICATION FUNCTIONS
 // ============================================================================
 
@@ -790,7 +906,13 @@ public:
             Serial.println(" seconds | Sample Count: " + String(sampleCount));
             Serial.println();
             
-            // Display sensor data with clear formatting
+            // Enhanced Mental Health Analysis
+            String soundPerception = analyzeSoundPerception(avgSound);
+            String motionBehavior = analyzeMotionBehavior(avgMotion);
+            String mentalStatus = assessMentalHealth(avgTemp, avgHum, avgMotion, avgSound, soundPerception, motionBehavior);
+            String recommendations = generateRecommendations(mentalStatus);
+            
+            // Display sensor data with enhanced analysis
             Serial.println("📊 SENSOR READINGS (30-second averages):");
             Serial.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
             
@@ -808,17 +930,21 @@ public:
             if (humChanged) Serial.print(" ⚡ CHANGED");
             Serial.println();
             
-            // Motion
+            // Motion with behavioral interpretation
             Serial.print("📱 Motion:      ");
             Serial.print(avgMotion, 2);
-            Serial.print(" m/s²");
+            Serial.print(" m/s² (");
+            Serial.print(motionBehavior);
+            Serial.print(")");
             if (motionChanged) Serial.print(" ⚡ CHANGED");
             Serial.println();
             
-            // Sound
+            // Sound with human-like perception
             Serial.print("🎤 Sound:       ");
             Serial.print(avgSound);
-            Serial.print(" units");
+            Serial.print(" units (");
+            Serial.print(soundPerception);
+            Serial.print(")");
             if (soundChanged) Serial.print(" ⚡ CHANGED");
             Serial.println();
             
@@ -876,23 +1002,32 @@ public:
             
             Serial.println();
             
-            // Overall health assessment
-            Serial.println("🏥 OVERALL HEALTH ASSESSMENT:");
+            // Enhanced Mental Health Assessment
+            Serial.println("🧠 MENTAL HEALTH ASSESSMENT:");
             Serial.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
             
-            int alertCount = 0;
-            if (avgTemp > 30 || avgHum > 85) alertCount += 2;
-            if (avgMotion > 10) alertCount += 1;
-            if (avgSound > 400) alertCount += 1;
+            // Display mental health status with appropriate icon
+            if (mentalStatus == "CALM") {
+                Serial.println("✅ Status: CALM - All systems normal");
+            } else if (mentalStatus == "ANXIOUS") {
+                Serial.println("⚠️  Status: ANXIOUS - Mild anxiety indicators");
+            } else if (mentalStatus == "STRESSED") {
+                Serial.println("🚨 Status: STRESSED - Moderate stress indicators");
+            } else if (mentalStatus == "DISTRESSED") {
+                Serial.println("🔴 Status: DISTRESSED - High distress indicators");
+            } else if (mentalStatus == "CRITICAL") {
+                Serial.println("🆘 Status: CRITICAL - Emergency situation!");
+            }
             
-            if (alertCount == 0) {
-                Serial.println("✅ ALL SYSTEMS NORMAL - Patient is comfortable");
-            } else if (alertCount == 1) {
-                Serial.println("⚠️  MINOR WARNING - Some parameters need attention");
-            } else if (alertCount == 2) {
-                Serial.println("🚨 ALERT - Multiple parameters concerning");
-            } else {
-                Serial.println("🚨 CRITICAL - Immediate attention required!");
+            Serial.println();
+            Serial.println("💡 CAREGIVER RECOMMENDATIONS:");
+            Serial.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+            Serial.println(recommendations);
+            
+            // Critical situation alert
+            if (mentalStatus == "DISTRESSED" || mentalStatus == "CRITICAL") {
+                Serial.println();
+                Serial.println("🚨 IMMEDIATE ATTENTION REQUIRED! 🚨");
             }
             
             Serial.println();
