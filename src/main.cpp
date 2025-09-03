@@ -87,121 +87,9 @@
 // Microphone Pin (Analog)
 #define MIC_PIN A3
 
-// ============================================================================
-// ENHANCED MENTAL HEALTH ANALYSIS THRESHOLDS
-// ============================================================================
-
-// Enhanced Sound Analysis - Human-like perception
-#define SOUND_SILENCE_MAX 30           // 0-30: Complete silence
-#define SOUND_WHISPER_MAX 60           // 31-60: Whisper level
-#define SOUND_NORMAL_MAX 120           // 61-120: Normal conversation
-#define SOUND_LOUD_MAX 200             // 121-200: Loud talking/shouting
-#define SOUND_VERY_LOUD_MAX 300        // 201-300: Very loud (disturbing)
-#define SOUND_DANGEROUS_MIN 300        // 300+: Dangerous levels
-
-// Enhanced Motion Analysis - Behavioral interpretation
-#define MOTION_SLEEPING_MAX 0.5        // 0-0.5: Sleeping/very still
-#define MOTION_SITTING_MAX 1.5         // 0.5-1.5: Sitting/relaxed
-#define MOTION_WALKING_MAX 3.0         // 1.5-3.0: Normal walking
-#define MOTION_ACTIVE_MAX 6.0          // 3.0-6.0: Active movement
-#define MOTION_AGITATED_MAX 10.0       // 6.0-10.0: Agitated/restless
-#define MOTION_VIOLENT_MIN 10.0        // 10+: Violent/panic behavior
-
-// ============================================================================
-// ENHANCED MENTAL HEALTH ANALYSIS FUNCTIONS
-// ============================================================================
-
-// Enhanced Sound Analysis - Human-like perception
-String analyzeSoundPerception(float soundLevel) {
-    if (soundLevel <= SOUND_SILENCE_MAX) {
-        return "SILENCE";
-    } else if (soundLevel <= SOUND_WHISPER_MAX) {
-        return "WHISPER";
-    } else if (soundLevel <= SOUND_NORMAL_MAX) {
-        return "NORMAL";
-    } else if (soundLevel <= SOUND_LOUD_MAX) {
-        return "LOUD";
-    } else if (soundLevel <= SOUND_VERY_LOUD_MAX) {
-        return "VERY_LOUD";
-    } else {
-        return "DANGEROUS";
-    }
-}
-
-// Enhanced Motion Analysis - Behavioral interpretation
-String analyzeMotionBehavior(float motionMagnitude) {
-    if (motionMagnitude <= MOTION_SLEEPING_MAX) {
-        return "SLEEPING";
-    } else if (motionMagnitude <= MOTION_SITTING_MAX) {
-        return "SITTING";
-    } else if (motionMagnitude <= MOTION_WALKING_MAX) {
-        return "WALKING";
-    } else if (motionMagnitude <= MOTION_ACTIVE_MAX) {
-        return "ACTIVE";
-    } else if (motionMagnitude <= MOTION_AGITATED_MAX) {
-        return "AGITATED";
-    } else {
-        return "VIOLENT";
-    }
-}
-
-// Mental Health Assessment
-String assessMentalHealth(float temp, float humidity, float motion, float sound, String soundPerception, String motionBehavior) {
-    int stressScore = 0;
-    
-    // Sound-based stress indicators
-    if (soundPerception == "VERY_LOUD" || soundPerception == "DANGEROUS") {
-        stressScore += 2;
-    } else if (soundPerception == "LOUD") {
-        stressScore += 1;
-    }
-    
-    // Motion-based stress indicators
-    if (motionBehavior == "VIOLENT") {
-        stressScore += 3;
-    } else if (motionBehavior == "AGITATED") {
-        stressScore += 2;
-    } else if (motionBehavior == "ACTIVE" && motion > 5.0) {
-        stressScore += 1; // High activity
-    }
-    
-    // Environmental stress indicators
-    if (temp > 30.0 || humidity > 85.0) {
-        stressScore += 2;
-    } else if (temp > 26.0 || humidity > 70.0) {
-        stressScore += 1;
-    }
-    
-    // Determine mental health status
-    if (stressScore == 0) {
-        return "CALM";
-    } else if (stressScore <= 2) {
-        return "ANXIOUS";
-    } else if (stressScore <= 4) {
-        return "STRESSED";
-    } else if (stressScore <= 6) {
-        return "DISTRESSED";
-    } else {
-        return "CRITICAL";
-    }
-}
-
-// Generate Caregiver Recommendations
-String generateRecommendations(String mentalStatus) {
-    if (mentalStatus == "CALM") {
-        return "Patient is comfortable. Continue monitoring.";
-    } else if (mentalStatus == "ANXIOUS") {
-        return "Mild anxiety detected. Check environment and provide comfort.";
-    } else if (mentalStatus == "STRESSED") {
-        return "Moderate stress detected. Consider intervention or comfort measures.";
-    } else if (mentalStatus == "DISTRESSED") {
-        return "High distress detected. Immediate attention recommended.";
-    } else if (mentalStatus == "CRITICAL") {
-        return "CRITICAL SITUATION. Immediate intervention required.";
-    } else {
-        return "Continue monitoring.";
-    }
-}
+// Sound Calibration Parameters
+#define SOUND_BASELINE_SAMPLES 50    // Samples to take for baseline calibration
+#define SOUND_BASELINE_THRESHOLD 5   // Minimum change from baseline to register as sound
 
 // ============================================================================
 // DIRECT I2C COMMUNICATION FUNCTIONS
@@ -241,6 +129,77 @@ int16_t i2cRead16Bit(uint8_t deviceAddr, uint8_t regL, uint8_t regH) {
     uint8_t high = i2cReadRegister(deviceAddr, regH);
     return (int16_t)((high << 8) | low);
   }
+
+// ============================================================================
+// SOUND SENSOR CALIBRATION SYSTEM
+// ============================================================================
+
+class SoundCalibrator {
+private:
+    int baselineValue;
+    bool isCalibrated;
+    int calibrationSamples;
+    
+public:
+    SoundCalibrator() {
+        baselineValue = 0;
+        isCalibrated = false;
+        calibrationSamples = 0;
+    }
+    
+    // Calibrate baseline during quiet period
+    void calibrate() {
+        Serial.println("🎤 Sound Sensor: Starting baseline calibration...");
+        Serial.println("🎤 Please keep quiet for 5 seconds...");
+        
+        long sum = 0;
+        int samples = 0;
+        
+        for (int i = 0; i < SOUND_BASELINE_SAMPLES; i++) {
+            sum += analogRead(MIC_PIN);
+            samples++;
+            delay(100);
+            
+            if (i % 10 == 0) {
+                Serial.print("🎤 Calibrating... ");
+                Serial.print((i * 100) / SOUND_BASELINE_SAMPLES);
+                Serial.println("%");
+            }
+        }
+        
+        baselineValue = sum / samples;
+        isCalibrated = true;
+        
+        Serial.print("🎤 Baseline calibrated: ");
+        Serial.print(baselineValue);
+        Serial.println(" units");
+        Serial.println("🎤 Sound sensor ready!");
+    }
+    
+    // Get calibrated sound level (0 = silence, positive = sound detected)
+    int getCalibratedSoundLevel() {
+        if (!isCalibrated) {
+            return analogRead(MIC_PIN); // Return raw value if not calibrated
+        }
+        
+        int rawValue = analogRead(MIC_PIN);
+        int calibratedValue = rawValue - baselineValue;
+        
+        // Only return positive values (sound above baseline)
+        return (calibratedValue > 0) ? calibratedValue : 0;
+    }
+    
+    bool isReady() {
+        return isCalibrated;
+    }
+    
+    int getBaseline() {
+        return baselineValue;
+    }
+};
+
+// Global sound calibrator
+SoundCalibrator soundCalibrator;
 
 // ============================================================================
 // HTS221 TEMPERATURE & HUMIDITY SENSOR
@@ -546,13 +505,18 @@ public:
         motion.gyroY = gyroY_raw * 8.75f * 0.001f;
         motion.gyroZ = gyroZ_raw * 8.75f * 0.001f;
         
-        // Calculate motion magnitude
-        motion.motionMagnitude = sqrt(motion.accelX * motion.accelX + 
-                                    motion.accelY * motion.accelY + 
-                                    motion.accelZ * motion.accelZ);
+        // Calculate motion magnitude (excluding gravity)
+        // Remove gravity component (assuming Z-axis is vertical)
+        float accelX_noGravity = motion.accelX;
+        float accelY_noGravity = motion.accelY;
+        float accelZ_noGravity = motion.accelZ - 9.81f; // Remove gravity
         
-        // Motion detection
-        motion.isMoving = (motion.motionMagnitude > 0.3f);
+        motion.motionMagnitude = sqrt(accelX_noGravity * accelX_noGravity + 
+                                    accelY_noGravity * accelY_noGravity + 
+                                    accelZ_noGravity * accelZ_noGravity);
+        
+        // Motion detection (now properly calibrated)
+        motion.isMoving = (motion.motionMagnitude > 0.1f);
         
         // Set sensor working flag
         motion.sensorWorking = true;
@@ -569,18 +533,18 @@ public:
 #define SMOOTHING_SAMPLES 10            // Average over 10 samples
 #define ALERT_THRESHOLD_COUNT 3         // Alert after 3 consecutive violations
 
-// Sound Level Thresholds (Professional Scale)
-#define SOUND_SILENCE_MAX 50            // 0-50: Silence
-#define SOUND_LOW_MAX 100               // 51-100: Low
-#define SOUND_MEDIUM_MAX 200            // 101-200: Medium  
-#define SOUND_HIGH_MAX 400              // 201-400: High
-#define SOUND_DANGEROUS_MIN 400         // 400+: Dangerous
+// Sound Level Thresholds (Calibrated Scale - above baseline)
+#define SOUND_SILENCE_MAX 5             // 0-5: Silence (near baseline)
+#define SOUND_LOW_MAX 20                // 6-20: Low sound
+#define SOUND_MEDIUM_MAX 50             // 21-50: Medium sound  
+#define SOUND_HIGH_MAX 100              // 51-100: High sound
+#define SOUND_DANGEROUS_MIN 100         // 100+: Dangerous/very loud
 
-// Motion Intensity Thresholds (Professional Scale)
-#define MOTION_CALM_MAX 2.0             // 0-2 m/s²: Calm
-#define MOTION_NORMAL_MAX 5.0           // 2-5 m/s²: Normal
-#define MOTION_ACTIVE_MAX 10.0          // 5-10 m/s²: Active
-#define MOTION_VIOLENT_MIN 10.0         // 10+ m/s²: Violent
+// Motion Intensity Thresholds (Gravity-Corrected Scale)
+#define MOTION_CALM_MAX 0.5             // 0-0.5 m/s²: Calm (gravity-corrected)
+#define MOTION_NORMAL_MAX 1.5           // 0.5-1.5 m/s²: Normal movement
+#define MOTION_ACTIVE_MAX 3.0           // 1.5-3.0 m/s²: Active movement
+#define MOTION_VIOLENT_MIN 3.0          // 3.0+ m/s²: Violent/shaking
 
 // Environmental Thresholds
 #define TEMP_COMFORTABLE_MIN 18.0       // 18-26°C: Comfortable
@@ -837,8 +801,8 @@ IntelligentSensorMonitor sensorMonitor;
 #define AVERAGE_WINDOW_MS 30000         // Average over 30 seconds
 #define SIGNIFICANT_CHANGE_TEMP 1.0     // 1°C change
 #define SIGNIFICANT_CHANGE_HUM 3.0      // 3% change
-#define SIGNIFICANT_CHANGE_MOTION 1.0   // 1 m/s² change
-#define SIGNIFICANT_CHANGE_SOUND 30     // 30 unit change
+#define SIGNIFICANT_CHANGE_MOTION 0.2   // 0.2 m/s² change (gravity-corrected)
+#define SIGNIFICANT_CHANGE_SOUND 5      // 5 unit change (calibrated)
 
 class CleanDisplay {
 private:
@@ -900,19 +864,16 @@ public:
             Serial.println("║                    Real-Time Sensor Data                    ║");
             Serial.println("╚══════════════════════════════════════════════════════════════╝");
             
-            // Display timestamp
+            // Display timestamp and calibration info
             Serial.print("🕐 Time: ");
             Serial.print(now / 1000);
             Serial.println(" seconds | Sample Count: " + String(sampleCount));
+            Serial.print("🎤 Sound Baseline: ");
+            Serial.print(soundCalibrator.getBaseline());
+            Serial.println(" units | 📱 Motion: Gravity-corrected");
             Serial.println();
             
-            // Enhanced Mental Health Analysis
-            String soundPerception = analyzeSoundPerception(avgSound);
-            String motionBehavior = analyzeMotionBehavior(avgMotion);
-            String mentalStatus = assessMentalHealth(avgTemp, avgHum, avgMotion, avgSound, soundPerception, motionBehavior);
-            String recommendations = generateRecommendations(mentalStatus);
-            
-            // Display sensor data with enhanced analysis
+            // Display sensor data with clear formatting
             Serial.println("📊 SENSOR READINGS (30-second averages):");
             Serial.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
             
@@ -930,21 +891,17 @@ public:
             if (humChanged) Serial.print(" ⚡ CHANGED");
             Serial.println();
             
-            // Motion with behavioral interpretation
+            // Motion
             Serial.print("📱 Motion:      ");
             Serial.print(avgMotion, 2);
-            Serial.print(" m/s² (");
-            Serial.print(motionBehavior);
-            Serial.print(")");
+            Serial.print(" m/s²");
             if (motionChanged) Serial.print(" ⚡ CHANGED");
             Serial.println();
             
-            // Sound with human-like perception
+            // Sound
             Serial.print("🎤 Sound:       ");
             Serial.print(avgSound);
-            Serial.print(" units (");
-            Serial.print(soundPerception);
-            Serial.print(")");
+            Serial.print(" units");
             if (soundChanged) Serial.print(" ⚡ CHANGED");
             Serial.println();
             
@@ -976,25 +933,25 @@ public:
                 Serial.println("💧 Humidity:    ❓ UNKNOWN");
             }
             
-            // Motion status
-            if (avgMotion <= 2) {
+            // Motion status (gravity-corrected)
+            if (avgMotion <= MOTION_CALM_MAX) {
                 Serial.println("📱 Motion:      ✅ CALM");
-            } else if (avgMotion <= 5) {
+            } else if (avgMotion <= MOTION_NORMAL_MAX) {
                 Serial.println("📱 Motion:      ✅ NORMAL");
-            } else if (avgMotion <= 10) {
+            } else if (avgMotion <= MOTION_ACTIVE_MAX) {
                 Serial.println("📱 Motion:      ⚠️  ACTIVE");
             } else {
                 Serial.println("📱 Motion:      🚨 VIOLENT!");
             }
             
-            // Sound status
-            if (avgSound <= 50) {
+            // Sound status (calibrated)
+            if (avgSound <= SOUND_SILENCE_MAX) {
                 Serial.println("🎤 Sound:       ✅ SILENCE");
-            } else if (avgSound <= 100) {
+            } else if (avgSound <= SOUND_LOW_MAX) {
                 Serial.println("🎤 Sound:       ✅ LOW");
-            } else if (avgSound <= 200) {
+            } else if (avgSound <= SOUND_MEDIUM_MAX) {
                 Serial.println("🎤 Sound:       ⚠️  MEDIUM");
-            } else if (avgSound <= 400) {
+            } else if (avgSound <= SOUND_HIGH_MAX) {
                 Serial.println("🎤 Sound:       ⚠️  HIGH");
             } else {
                 Serial.println("🎤 Sound:       🚨 DANGEROUS!");
@@ -1002,32 +959,23 @@ public:
             
             Serial.println();
             
-            // Enhanced Mental Health Assessment
-            Serial.println("🧠 MENTAL HEALTH ASSESSMENT:");
+            // Overall health assessment
+            Serial.println("🏥 OVERALL HEALTH ASSESSMENT:");
             Serial.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
             
-            // Display mental health status with appropriate icon
-            if (mentalStatus == "CALM") {
-                Serial.println("✅ Status: CALM - All systems normal");
-            } else if (mentalStatus == "ANXIOUS") {
-                Serial.println("⚠️  Status: ANXIOUS - Mild anxiety indicators");
-            } else if (mentalStatus == "STRESSED") {
-                Serial.println("🚨 Status: STRESSED - Moderate stress indicators");
-            } else if (mentalStatus == "DISTRESSED") {
-                Serial.println("🔴 Status: DISTRESSED - High distress indicators");
-            } else if (mentalStatus == "CRITICAL") {
-                Serial.println("🆘 Status: CRITICAL - Emergency situation!");
-            }
+            int alertCount = 0;
+            if (avgTemp > 30 || avgHum > 85) alertCount += 2;
+            if (avgMotion > MOTION_ACTIVE_MAX) alertCount += 1;
+            if (avgSound > SOUND_HIGH_MAX) alertCount += 1;
             
-            Serial.println();
-            Serial.println("💡 CAREGIVER RECOMMENDATIONS:");
-            Serial.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-            Serial.println(recommendations);
-            
-            // Critical situation alert
-            if (mentalStatus == "DISTRESSED" || mentalStatus == "CRITICAL") {
-                Serial.println();
-                Serial.println("🚨 IMMEDIATE ATTENTION REQUIRED! 🚨");
+            if (alertCount == 0) {
+                Serial.println("✅ ALL SYSTEMS NORMAL - Patient is comfortable");
+            } else if (alertCount == 1) {
+                Serial.println("⚠️  MINOR WARNING - Some parameters need attention");
+            } else if (alertCount == 2) {
+                Serial.println("🚨 ALERT - Multiple parameters concerning");
+            } else {
+                Serial.println("🚨 CRITICAL - Immediate attention required!");
             }
             
             Serial.println();
@@ -1116,12 +1064,17 @@ void setup() {
     bool hts221_ok = hts221.begin();
     bool lsm6ds3_ok = lsm6ds3.begin();
     
+    // Calibrate sound sensor
+    soundCalibrator.calibrate();
+    
     Serial.println("============================================================");
     Serial.println("SENSOR INITIALIZATION SUMMARY:");
     Serial.print("HTS221 (Temperature & Humidity): ");
     Serial.println(hts221_ok ? "✅ OK" : "❌ FAILED");
     Serial.print("LSM6DS3 (Accelerometer & Gyroscope): ");
     Serial.println(lsm6ds3_ok ? "✅ OK" : "❌ FAILED");
+    Serial.print("Microphone (Sound Sensor): ");
+    Serial.println(soundCalibrator.isReady() ? "✅ CALIBRATED" : "❌ FAILED");
     Serial.println("============================================================");
     
     if (!hts221_ok && !lsm6ds3_ok) {
@@ -1151,25 +1104,20 @@ void loop() {
             Serial.println("LSM6DS3: Sensor failed during operation - using fallback");
         }
     } else {
-        // Fallback: simulate minimal motion data
+        // Fallback: simulate minimal motion data (gravity-corrected)
         motion.accelX = 0.0f;
         motion.accelY = 0.0f;
         motion.accelZ = 9.81f; // Gravity only
         motion.gyroX = 0.0f;
         motion.gyroY = 0.0f;
         motion.gyroZ = 0.0f;
-        motion.motionMagnitude = 9.81f; // Gravity magnitude
+        motion.motionMagnitude = 0.0f; // No motion (gravity-corrected)
         motion.isMoving = false;
         motion.sensorWorking = false;
     }
     
-    // Read microphone (simple average)
-    int micSum = 0;
-    for (int i = 0; i < 3; i++) {
-        micSum += analogRead(MIC_PIN);
-        delay(5);
-    }
-    int micValue = micSum / 3;
+    // Read microphone (calibrated)
+    int micValue = soundCalibrator.getCalibratedSoundLevel();
     
     // Add data to clean display system
     cleanDisplay.addData(temperature, humidity, motion.motionMagnitude, micValue);
