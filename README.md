@@ -296,7 +296,25 @@ This project contributes to the field of **IoT-based mental health monitoring** 
 
 ---
 
-## 📚 References
+## 📚 Research Validation
+
+This project implements **research-validated threshold-based detection methods** for mental health monitoring. Our approach is supported by multiple peer-reviewed studies:
+
+### Key Research Findings:
+- **Threshold-based stress detection** is scientifically validated (PMC, MDPI studies)
+- **Accelerometer-based activity recognition** is established in healthcare monitoring
+- **Multimodal IoT stress detection** using multiple sensors is research-backed
+- **Rule-based detection methods** are effective for real-time monitoring
+
+### Our Implementation:
+- **Environmental thresholds** based on healthcare comfort standards
+- **Motion intensity classification** using research-validated accelerometer methods
+- **Sound level monitoring** following established environmental monitoring principles
+- **Multi-sensor fusion** similar to validated IoT health monitoring systems
+
+For detailed research validation, see [RESEARCH_VALIDATION.md](RESEARCH_VALIDATION.md).
+
+## 📚 Technical References
 
 1. **HTS221 Datasheet**: STMicroelectronics
 2. **LSM6DS3 Datasheet**: STMicroelectronics
